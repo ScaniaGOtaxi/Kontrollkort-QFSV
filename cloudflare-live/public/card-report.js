@@ -1,8 +1,9 @@
 import {daily,weekly,equipment} from './data.js';
 export function cardLines(card,vehicles){const v=card.snapshot?.vehicle||vehicles.find(v=>v[0]===card.vehicle)||[card.vehicle,card.vehicle,'','loader'],lines=['KONTROLLKORT QFSV',`${card.date} · ${card.snapshot?.name||(card.name==='Övrigt'?card.otherName:card.name)}`,`${v[1]} · ${v[2]}`];
  const add=(label,value)=>{if(value!==undefined&&value!=='')lines.push(`${label}: ${value}`)};
- const questions=items=>items.filter(q=>q.visible).forEach(q=>add(q.text,card[q.id]||'Ej besvarat'));
- const extra=()=>{const e=card.snapshot?.extraVehicle||vehicles.find(v=>v[0]===card.extra);if(e&&card.extra){lines.push(e[1]);if(card.snapshot?.equipmentQuestions)card.snapshot.equipmentQuestions.forEach(q=>add(q.text,card[q.id]||'Ej besvarat'));else (card.snapshot?.checks?.extra||equipment[e[0]]||equipment[e[3]]||[]).forEach((label,i)=>add(label,card['extra'+i]||'Ej besvarat'));add('Kommentar',card.extraComment)}};
+ const answer=(id,label)=>{add(label,card[id]||'Ej besvarat');add('Kommentar – '+label,card[id+'_comment'])};
+ const questions=items=>items.filter(q=>q.visible).forEach(q=>answer(q.id,q.text));
+ const extra=()=>{const e=card.snapshot?.extraVehicle||vehicles.find(v=>v[0]===card.extra);if(e&&card.extra){lines.push(e[1]);if(card.snapshot?.equipmentQuestions)card.snapshot.equipmentQuestions.forEach(q=>answer(q.id,q.text));else (card.snapshot?.checks?.extra||equipment[e[0]]||equipment[e[3]]||[]).forEach((label,i)=>answer('extra'+i,label));add('Kommentar',card.extraComment)}};
  if(card.meterPeriod)lines.push('Rapporteringsmånad: '+card.meterPeriod);
  const section=s=>{if(!s.visible||s.type==='weekly'&&!card.weekly||s.type==='equipment'&&!card.extra||s.type==='service'&&!card.service||s.type==='meter'&&!card.meter)return;
  lines.push('\n'+s.title);
@@ -14,10 +15,10 @@ export function cardLines(card,vehicles){const v=card.snapshot?.vehicle||vehicle
  if(s.type==='meter')add('Mätarställning',card.reading+' '+card.unit);
  };
  if(card.snapshot?.sections)card.snapshot.sections.forEach(section);else{
- (card.snapshot?.checks?.daily||daily(v)).forEach((label,i)=>add(label,card['daily'+i]||'Ej besvarat'));
- if(card.weekly)(card.snapshot?.checks?.weekly||weekly(v)).forEach((label,i)=>add(label,card['week'+i]||'Ej besvarat'));
+ (card.snapshot?.checks?.daily||daily(v)).forEach((label,i)=>answer('daily'+i,label));
+ if(card.weekly)(card.snapshot?.checks?.weekly||weekly(v)).forEach((label,i)=>answer('week'+i,label));
  extra();add('Alkolås',card.alcohol);add('Kommentar alkolås',card.alcoholComment);add('Fordonsstatus',card.carStatus);
- if(card.carStatus==='Fel')['Lampor höger/vänster','Blinkers höger/vänster','Bromslampor','Registreringslampor'].forEach((label,i)=>add(label,card['light'+i]));
+ if(card.carStatus==='Fel')['Lampor höger/vänster','Blinkers höger/vänster','Bromslampor','Registreringslampor'].forEach((label,i)=>answer('light'+i,label));
  add('Fordonsfel',card.carComment);if(card.service){add('Typ av arbete',card.serviceType);add('Information',card.serviceComment)}if(card.meter)add('Mätarställning',card.reading+' '+card.unit);
  }
  add('Övrigt',card.comment);return lines;
