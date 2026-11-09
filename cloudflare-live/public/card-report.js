@@ -1,7 +1,10 @@
+export const isDeviation=value=>['Skall repareras','Skall bytas','Fel','Service','Annat'].includes(value);
+const escapeHtml=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 import {daily,weekly,equipment} from './data.js';
-export function cardLines(card,vehicles){const v=card.snapshot?.vehicle||vehicles.find(v=>v[0]===card.vehicle)||[card.vehicle,card.vehicle,'','loader'],lines=['KONTROLLKORT QFSV',`${card.date} · ${card.snapshot?.name||(card.name==='Övrigt'?card.otherName:card.name)}`,`${v[1]} · ${v[2]}`];
- const add=(label,value)=>{if(value!==undefined&&value!=='')lines.push(`${label}: ${value}`)};
- const answer=(id,label)=>{add(label,card[id]||'Ej besvarat');add('Kommentar – '+label,card[id+'_comment'])};
+export function cardLines(card,vehicles,render=line=>line){const v=card.snapshot?.vehicle||vehicles.find(v=>v[0]===card.vehicle)||[card.vehicle,card.vehicle,'','loader'],lines=['KONTROLLKORT QFSV',`${card.date} · ${card.snapshot?.name||(card.name==='Övrigt'?card.otherName:card.name)}`,`${v[1]} · ${v[2]}`];
+ const deviations=new Set();
+ const add=(label,value,deviation=false)=>{if(value!==undefined&&value!==''){if(deviation)deviations.add(lines.length);lines.push(`${label}: ${value}`)}};
+ const answer=(id,label)=>{add(label,card[id]||'Ej besvarat',isDeviation(card[id]));add('Kommentar – '+label,card[id+'_comment'])};
  const questions=items=>items.filter(q=>q.visible).forEach(q=>answer(q.id,q.text));
  const extra=()=>{const e=card.snapshot?.extraVehicle||vehicles.find(v=>v[0]===card.extra);if(e&&card.extra){lines.push(e[1]);if(card.snapshot?.equipmentQuestions)card.snapshot.equipmentQuestions.forEach(q=>answer(q.id,q.text));else (card.snapshot?.checks?.extra||equipment[e[0]]||equipment[e[3]]||[]).forEach((label,i)=>answer('extra'+i,label));add('Kommentar',card.extraComment)}};
  if(card.meterPeriod)lines.push('Rapporteringsmånad: '+card.meterPeriod);
@@ -9,17 +12,19 @@ export function cardLines(card,vehicles){const v=card.snapshot?.vehicle||vehicle
  lines.push('\n'+s.title);
  if(['daily','weekly','custom'].includes(s.type))questions(s.questions);
  if(s.type==='equipment')extra();
- if(s.type==='alcohol'){add('Status',card.alcohol);add('Kommentar',card.alcoholComment)}
- if(s.type==='vehicleStatus'){add('Status',card.carStatus);if(card.carStatus==='Fel')questions(s.questions);add('Beskrivning',card.carComment)}
+ if(s.type==='alcohol'){add('Status',card.alcohol,isDeviation(card.alcohol));add('Kommentar',card.alcoholComment)}
+ if(s.type==='vehicleStatus'){add('Status',card.carStatus,isDeviation(card.carStatus));if(card.carStatus==='Fel')questions(s.questions);add('Beskrivning',card.carComment)}
  if(s.type==='service'){add('Typ',card.serviceType);add('Information',card.serviceComment)}
  if(s.type==='meter')add('Mätarställning',card.reading+' '+card.unit);
  };
  if(card.snapshot?.sections)card.snapshot.sections.forEach(section);else{
  (card.snapshot?.checks?.daily||daily(v)).forEach((label,i)=>answer('daily'+i,label));
  if(card.weekly)(card.snapshot?.checks?.weekly||weekly(v)).forEach((label,i)=>answer('week'+i,label));
- extra();add('Alkolås',card.alcohol);add('Kommentar alkolås',card.alcoholComment);add('Fordonsstatus',card.carStatus);
+ extra();add('Alkolås',card.alcohol,isDeviation(card.alcohol));add('Kommentar alkolås',card.alcoholComment);add('Fordonsstatus',card.carStatus,isDeviation(card.carStatus));
  if(card.carStatus==='Fel')['Lampor höger/vänster','Blinkers höger/vänster','Bromslampor','Registreringslampor'].forEach((label,i)=>answer('light'+i,label));
  add('Fordonsfel',card.carComment);if(card.service){add('Typ av arbete',card.serviceType);add('Information',card.serviceComment)}if(card.meter)add('Mätarställning',card.reading+' '+card.unit);
  }
- add('Övrigt',card.comment);return lines;
+ add('Övrigt',card.comment);return lines.map((line,i)=>render(line,deviations.has(i)));
 }
+
+export const cardHtml=(card,vehicles)=>cardLines(card,vehicles,(line,deviation)=>deviation?`<strong class="deviation">${escapeHtml(line)}</strong>`:escapeHtml(line)).join('\n');

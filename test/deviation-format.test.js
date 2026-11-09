@@ -1,0 +1,9 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {cardHtml,cardLines} from '../cloudflare-live/public/card-report.js';
+const card={vehicle:'test',date:'2026-11-09',name:'<driver>',daily0:'Skall bytas',daily1:'Utan anmärkning',week0:'Skall repareras',weekly:true,alcohol:'Service',carStatus:'Fel',light0:'Fel',q_test:'Åtgärdat',comment:'Skall bytas <script>alert(1)</script>',snapshot:{vehicle:['test','Test','ABC','loader'],sections:[{type:'daily',title:'Daglig',visible:true,questions:[{id:'daily0',text:'Däck',visible:true},{id:'daily1',text:'Olja',visible:true}]},{type:'weekly',title:'Veckokontroll',visible:true,questions:[{id:'week0',text:'Filter',visible:true}]},{type:'alcohol',title:'Alkolås',visible:true},{type:'vehicleStatus',title:'Belysning',visible:true,questions:[{id:'light0',text:'Lampor',visible:true}]},{type:'custom',title:'Egen',visible:true,questions:[{id:'q_test',text:'Egen kontroll',visible:true}]}]}};
+test('report HTML highlights actual deviations, escapes content and leaves normal answers and comments unchanged',()=>{
+ const html=cardHtml(card,[]);assert.equal((html.match(/class="deviation"/g)||[]).length,5);assert.ok(html.includes('<strong class="deviation">Däck: Skall bytas</strong>'));assert.ok(!html.includes('<strong class="deviation">Olja'));assert.ok(!html.includes('<strong class="deviation">Övrigt'));assert.ok(html.includes('&lt;script&gt;'));assert.ok(!html.includes('<script>'));assert.ok(!html.includes('<strong class="deviation">Egen kontroll'));
+ assert.ok(!cardLines(card,[]).join('\n').includes('<strong'));assert.ok(cardLines(card,[]).join('\n').includes('Däck: Skall bytas'));
+});
+test('older reports without snapshots retain highlighted fault answers',()=>{assert.ok(cardHtml({...card,snapshot:undefined},[]).includes('class="deviation"'))});
