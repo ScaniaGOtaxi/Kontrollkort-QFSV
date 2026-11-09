@@ -1,0 +1,22 @@
+{
+  "id": "/",
+  "name": "QFSV – Fordon & säkerhet",
+  "short_name": "QFSV",
+  "description": "Fordonskontroller, mätarställningar och gemensamma rapporter.",
+  "lang": "sv-SE",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#041e42",
+  "theme_color": "#041e42",
+  "prefer_related_applications": false,
+  "icons": [
+    {"src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+    {"src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ],
+  "shortcuts": [
+    {"name": "Ny fordonskontroll", "short_name": "Ny kontroll", "url": "/"},
+    {"name": "Administration", "url": "/admin.html"}
+  ]
+}

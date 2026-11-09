@@ -1,0 +1,11 @@
+export const textFields={
+ siteTitle:['Sidans titel','Kontrollkort QFSV'],brand:['Logotyptext','QFSV'],brandCaption:['Text under logotypen','FORDON & SÄKERHET'],
+ menuNew:['Meny: ny kontroll','Ny kontroll'],menuHistory:['Meny: historik','Historik'],menuAdmin:['Meny: administration','Administration →'],
+ eyebrow:['Liten rubrik överst','DAGLIG TILLSYN · QFSV'],heading:['Huvudrubrik','Ett tryggt arbetsskift börjar här.'],intro:['Introduktion','Kontrollera ditt fordon och samla allt på ett kontrollkort.'],badge:['Märke överst','● Säkerhet i varje steg'],
+ step1:['Steg 1','Fordon & förare'],step2:['Steg 2','Kontrollpunkter'],step3:['Steg 3','Granska & spara'],driverHeading:['Rubrik: förare','Vem kör idag?'],driverIntro:['Beskrivning: förare','Börja med datum och förare. Välj sedan ditt fordon.'],vehicleHeading:['Rubrik: fordon','Välj fordon'],
+ asideHeading:['Rubrik: sidopanel','Din dagliga säkerhetsrutin'],asideIntro:['Beskrivning: sidopanel','Ett par minuter nu gör skillnad under hela arbetsdagen.'],notice:['Meddelande vid fordonskontroll','Vid ”Skall repareras” eller ”Skall bytas” ska arbetsledningen kontaktas. Appen skickar ingen automatisk avisering.'],
+ footer:['Sidfot','QFSV · Digitalt kontrollkort'],footerCaption:['Sidfot: kompletterande text','Baserat på kontrollunderlaget']
+};
+export const defaults=Object.fromEntries(Object.entries(textFields).map(([key,[,value]])=>[key,value]));
+export function validContent(content){return content&&typeof content==='object'&&!Array.isArray(content)&&Object.keys(content).every(k=>Object.hasOwn(textFields,k)&&typeof content[k]==='string'&&content[k].trim().length>0&&content[k].length<=1000)}
+export function validateImage(body){if(!body||!['image/png','image/jpeg','image/webp'].includes(body.type)||typeof body.data!=='string'||body.data.length>700000||!/^[A-Za-z0-9+/]*={0,2}$/.test(body.data)||body.data.length%4!==0)return false;try{const b=Uint8Array.from(atob(body.data),c=>c.charCodeAt(0));return body.type==='image/png'?b.length>24&&[137,80,78,71,13,10,26,10].every((x,i)=>b[i]===x):body.type==='image/jpeg'?b.length>10&&b[0]===255&&b[1]===216&&b[2]===255:b.length>16&&String.fromCharCode(...b.slice(0,4))==='RIFF'&&String.fromCharCode(...b.slice(8,12))==='WEBP'}catch{return false}}
