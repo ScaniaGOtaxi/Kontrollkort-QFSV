@@ -23,10 +23,11 @@ export function cleanCard(input,vehicle,config){const card={...input},rules=rule
  if(!rules.meter){delete card.meter;delete card.reading;delete card.unit}
  if(!card.meter){delete card.reading;delete card.unit;delete card.meterPeriod}
  const sections=sectionsFor(vehicle,config);const allowed=new Set(sections.filter(s=>s.visible&&(s.type==='custom'||rules[s.type])&&(s.type!=='weekly'||card.weekly)&&(s.type!=='vehicleStatus'||card.carStatus==='Fel')).flatMap(s=>s.questions.filter(q=>q.visible).map(q=>q.id)));
- Object.keys(card).filter(k=>/^(?:daily|week|light)\d+$/.test(k)||k.startsWith('q_')).forEach(k=>{if(!allowed.has(k))delete card[k]});
+ Object.keys(card).filter(k=>/^(?:daily|week|light)\d+$/.test(k)||k.startsWith('q_')).forEach(k=>{if(!allowed.has(k.endsWith('_comment')?k.slice(0,-8):k))delete card[k]});
  const selected=config.vehicles.find(v=>v[0]===card.extra),equipmentIds=new Set(rules.equipment?activeEquipment(selected,config).map(q=>q.id):[]);
- Object.keys(card).filter(k=>/^extra\d+$/.test(k)||k.startsWith('e_')).forEach(k=>{if(!equipmentIds.has(k)||card[k]==='')delete card[k]});
+ Object.keys(card).filter(k=>/^extra\d+$/.test(k)||k.startsWith('e_')).forEach(k=>{if(!equipmentIds.has(k.endsWith('_comment')?k.slice(0,-8):k)||card[k]==='')delete card[k]});
  if(![...equipmentIds].some(id=>Object.hasOwn(card,id))){delete card.extra;delete card.extraComment}
+ for(const key of Object.keys(card).filter(k=>k.endsWith("_comment"))){const id=key.slice(0,-8);if(!Object.hasOwn(card,id))delete card[key]}
  return card;
 }
 export function snapshotFor(card,vehicle,config){const extra=config.vehicles.find(v=>v[0]===card.extra);return {vehicle:[...vehicle],name:card.name==='Övrigt'?card.otherName:card.name,group:{...rulesFor(vehicle,config)},sections:sectionsFor(vehicle,config).map(s=>({...s,visible:s.visible&&(s.type==='custom'||rulesFor(vehicle,config)[s.type]),questions:s.questions.map(q=>({...q}))})),equipmentQuestions:extra?activeEquipment(extra,config).filter(q=>Object.hasOwn(card,q.id)).map(q=>({...q})):[],checks:{daily:dailyFor(vehicle,config),weekly:weeklyFor(vehicle,config),extra:extra?activeEquipment(extra,config).filter(q=>Object.hasOwn(card,q.id)).map(q=>q.text):[]},extraVehicle:extra?[...extra]:null}}

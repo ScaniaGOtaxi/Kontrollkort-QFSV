@@ -11,7 +11,8 @@ export function reportFields(c,config){
  const labels=new Map();for(const section of c.snapshot?.sections||[])for(const q of section.questions||[])labels.set(q.id,q.text);
  for(const q of c.snapshot?.equipmentQuestions||[])labels.set(q.id,q.text);
  for(const [kind,list] of Object.entries(c.snapshot?.checks||{}))list.forEach((label,i)=>{if(!labels.has((kind==='weekly'?'week':kind)+i))labels.set((kind==='weekly'?'week':kind)+i,label)});
- for(const key of Object.keys(c))if(/^(daily|week|extra|light)\d+$/.test(key)||key.startsWith('q_')||key.startsWith('e_'))add(key,labels.get(key)||key,[...new Set([...statuses,'Fel',c[key]].filter(Boolean))]);
+ for(const key of Object.keys(c))if(!key.endsWith('_comment')&&(/^(daily|week|extra|light)\d+$/.test(key)||key.startsWith('q_')||key.startsWith('e_')))add(key,labels.get(key)||key,[...new Set([...statuses,'Fel',c[key]].filter(Boolean))]);
+ for(const f of [...fields])if(labels.has(f.key)||/^(daily|week|extra|light)\d+$/.test(f.key)||f.key.startsWith('q_')||f.key.startsWith('e_'))add(f.key+'_comment','Kommentar – '+f.label,null,'textarea');
  if(c.alcohol!==undefined)add('alcohol','Alkolås',['Utan anmärkning','Service','Annat',c.alcohol]);
  if(c.carStatus!==undefined)add('carStatus','Fordonsstatus',['Utan anmärkning','Fel',c.carStatus]);
  for(const [key,label] of [['comment','Övrig kommentar'],['extraComment','Utrustningskommentar'],['alcoholComment','Alkolås – kommentar'],['carComment','Fordonsfel – beskrivning']])if(key==='comment'||c[key]!==undefined)add(key,label,null,'textarea');
