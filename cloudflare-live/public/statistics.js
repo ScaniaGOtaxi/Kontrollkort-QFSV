@@ -3,10 +3,11 @@ import {validReading,validDate,stockholmDate} from './meter.js';
 export function previousMonth(period){const [y,m]=period.split('-').map(Number);return m===1?`${y-1}-12`:`${y}-${String(m-1).padStart(2,'0')}`}
 const periodOf=c=>/^\d{4}-(0[1-9]|1[0-2])$/.test(c.meterPeriod||'')?c.meterPeriod:c.date?.slice(0,7);
 const later=(a,b)=>a.date>b.date||a.date===b.date&&(a.savedAt||'')>(b.savedAt||'');
-export function monthlyStatistics(cards,config,{year=Number(stockholmDate().slice(0,4)),vehicle='',group='',today=stockholmDate()}={}){
+export function monthlyStatistics(cards,config,{year=Number(stockholmDate().slice(0,4)),vehicle='',group='',vehicles=null,today=stockholmDate()}={}){
  const unique=[...new Map(cards.map((c,i)=>[c.id||'row-'+i,c])).values()].filter(c=>validDate(c.date)&&c.date<=today);
  const definitions=new Map(config.vehicles.map(v=>[v[0],v]));for(const c of unique)if(!definitions.has(c.vehicle))definitions.set(c.vehicle,c.snapshot?.vehicle||[c.vehicle,c.vehicle,'','']);
- const fleet=[...definitions.values()].filter(v=>(!vehicle||v[0]===vehicle)&&(!group||v[3]===group)),ids=new Set(fleet.map(v=>v[0])),index=new Map(),units=new Map();
+ const selected=Array.isArray(vehicles)?new Set(vehicles):null;
+ const fleet=[...definitions.values()].filter(v=>(!vehicle||v[0]===vehicle)&&(!group||v[3]===group)&&(!selected||selected.has(v[0]))),ids=new Set(fleet.map(v=>v[0])),index=new Map(),units=new Map();
  for(const c of unique){if(!ids.has(c.vehicle)||!validReading(c))continue;const period=periodOf(c);if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(period||''))continue;const key=c.vehicle+'|'+c.unit+'|'+period;const old=index.get(key);if(!old||later(c,old))index.set(key,c);if(!units.has(c.vehicle))units.set(c.vehicle,new Set());units.get(c.vehicle).add(c.unit)}
  const events=unique.filter(c=>ids.has(c.vehicle)&&c.service===true&&['Service','Reparation','Inspektion'].includes(c.serviceType)&&c.date.startsWith(String(year)+'-')).sort((a,b)=>b.date.localeCompare(a.date)||(b.savedAt||'').localeCompare(a.savedAt||''));
  const difference=(id,unit,period)=>{const current=index.get(id+'|'+unit+'|'+period),before=index.get(id+'|'+unit+'|'+previousMonth(period));if(!units.get(id)?.has(unit))return {value:null,status:'no_readings'};if(!current)return {value:null,status:'missing_current'};if(!before)return {value:null,status:'missing_baseline',end:Number(current.reading),endDate:current.date};const start=Number(before.reading),end=Number(current.reading);if(end<start)return {value:null,status:'decreased',start,end,startDate:before.date,endDate:current.date};return {value:Math.round((end-start)*1000)/1000,status:'ok',start,end,startDate:before.date,endDate:current.date}};
